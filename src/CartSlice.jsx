@@ -3,52 +3,46 @@ import { createSlice } from '@reduxjs/toolkit';
 export const CartSlice = createSlice({
   name: 'cart',
   initialState: {
-    items: [], // { name, image, description, cost, quantity }
+    items: [], // { name, image, description, cost: "$15", quantity }
   },
   reducers: {
+    // Called from ProductList.jsx when user clicks Add to Cart
     addItem: (state, action) => {
       const product = action.payload;
       if (!product || !product.name) return;
 
       const existing = state.items.find((i) => i.name === product.name);
-      const cost = typeof product.cost === 'string'
-        ? Number(String(product.cost).replace('$', ''))
-        : Number(product.cost);
 
       if (existing) {
-        existing.quantity = (existing.quantity ?? 1) + 1;
+        existing.quantity = (existing.quantity || 1) + 1;
       } else {
         state.items.push({
           ...product,
-          cost: Number.isFinite(cost) ? cost : 0,
           quantity: 1,
         });
       }
     },
 
+    // Removes item by name (called from CartItem.jsx Delete / when qty drops to 0)
     removeItem: (state, action) => {
       const payload = action.payload;
       const name = typeof payload === 'string' ? payload : payload?.name;
       if (!name) return;
+
       state.items = state.items.filter((i) => i.name !== name);
     },
 
+    // Updates quantity to a NEW amount (payload: { name, amount })
     updateQuantity: (state, action) => {
-      const payload = action.payload;
-      if (!payload) return;
-
-      const name = payload.name ?? payload.productName ?? payload.id;
+      const { name, amount } = action.payload || {};
       if (!name) return;
 
       const item = state.items.find((i) => i.name === name);
       if (!item) return;
 
-      if (payload.delta !== undefined) {
-        item.quantity = (item.quantity ?? 1) + Number(payload.delta);
-      } else if (payload.quantity !== undefined) {
-        item.quantity = Number(payload.quantity);
-      }
+      item.quantity = Number(amount);
 
+      // If quantity becomes 0 or less, remove item
       if (!item.quantity || item.quantity <= 0) {
         state.items = state.items.filter((i) => i.name !== name);
       }
@@ -57,4 +51,5 @@ export const CartSlice = createSlice({
 });
 
 export const { addItem, removeItem, updateQuantity } = CartSlice.actions;
+
 export default CartSlice.reducer;
